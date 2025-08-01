@@ -5,13 +5,19 @@ from datetime import datetime
 import boto3
 from io import BytesIO
 
-# Initialize S3 client (uses credentials from ~/.aws/credentials)
-s3 = boto3.client('s3', region_name='sa-east-1')
-BUCKET_NAME = 'controle-de-processos'
-PARQUET_KEY = 'Controle_de_Processos.parquet'
+
+s3 = boto3.client(
+    's3',
+    aws_access_key_id=st.secrets["AWS_ACCESS_KEY_ID"],
+    aws_secret_access_key=st.secrets["AWS_SECRET_ACCESS_KEY"],
+    region_name=st.secrets["AWS_REGION"]
+)
 
 # Title
 st.title("Parquet Client Data Editor")
+
+bucket = st.secrets["BUCKET_NAME"]
+key = st.secrets["PARQUET_KEY"]
 
 
 @st.cache_data
@@ -37,8 +43,8 @@ mode = st.sidebar.radio("Choose load mode:", ("Use S3 file", "Upload local file"
 # Load data based on selection
 try:
     if mode == "Use S3 file":
-        df = read_from_s3(BUCKET_NAME, PARQUET_KEY)
-        st.sidebar.success(f"Loaded from S3: s3://{BUCKET_NAME}/{PARQUET_KEY}")
+        df = read_from_s3(bucket, key)
+        st.sidebar.success(f'Loaded from S3: s3://{bucket}/{key}')
     else:
         uploaded = st.sidebar.file_uploader("Upload a Parquet file", type=["parquet"])
         if uploaded is not None:
@@ -96,17 +102,17 @@ if save_option == "S3":
     if st.button("Save to S3"):
         try:
             # Create backup first
-            backup_key = f"backups/Controle_de_Processos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.parquet"
+            backup_key = f"backups/Controle_de_Processos_{datetime.now().strftime('%Y%m%d')}.parquet"
             s3.copy_object(
                 Bucket=BUCKET_NAME,
-                CopySource={'Bucket': BUCKET_NAME, 'Key': PARQUET_KEY},
+                CopySource={'Bucket': bucket, 'Key': key},
                 Key=backup_key
             )
 
             # Save edited version
-            write_to_s3(edited_df, BUCKET_NAME, PARQUET_KEY)
-            st.success(f"Saved to S3: s3://{BUCKET_NAME}/{PARQUET_KEY}")
-            st.info(f"Backup created at s3://{BUCKET_NAME}/{backup_key}")
+            write_to_s3(edited_df, bucket, key)
+            st.success(f'Saved to S3: s3://{bucket}/{key}')
+            st.info(f'Backup created at s3://{bucket}/{key}')
         except Exception as e:
             st.error(f"Error saving to S3: {str(e)}")
 else:
