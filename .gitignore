@@ -1,0 +1,19 @@
+# AWS secrets
+.aws/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Data files
+*.parquet
+*.csv
+
+# Environment files
+.env
+secrets.toml
+
+# System files
+.DS_Store
+Thumbs.db
+/.quarto/
